@@ -36,7 +36,7 @@ p.license { margin-left: 10pt; font-size: 8pt; }
 <h1>CSVJ</h1>
 
 <p>CSVJ is a csv-like format for storing tables that follows certain JSON encoding rules. </p>
-<p>Unlike plain csv, CSVJ has a strict definition for separators, quoting, encoding. It supposed to be imported and exported without configuration and it does not have dialects. </p>
+<p>Unlike plain csv, CSVJ has a strict definition for separators, quoting, encoding and non-optional header line. It supposed to be imported and exported without configuration and it does not have dialects. </p>
 
 <h2>Why?</h2>
 
@@ -45,7 +45,7 @@ There are many <a href="https://donatstudios.com/Falsehoods-Programmers-Believe-
 </p>
 
 <p>
-You can't be sure that CSV generated in one application could be imported to another without tweaking export or parsing parameters. CSVJ solves this. 
+You can't be sure that CSV generated in one application could be imported to another without tweaking export or import parameters. CSVJ solves this. 
 </p>
 
 <h2>Format</h2>
@@ -75,7 +75,10 @@ Each CSVJ line is like a JSON array, except:
 
 <p>String and number formats are the same as JSON.</p>
 
-<p>That's all.</p>
+<p>First line of every CSVJ file <b>must</b> contain table header &mdash; human readable names corresponding to the fields in the file, always represented as strings.</p>
+
+<p>Table header cannot be ommited. An empty first line can be used if there is no information about table fields.</p>
+
 
 <h2>Example</h2
 <p>
@@ -124,6 +127,7 @@ air, moon roof, loaded</td>
 The table above represented in CSVJ will look the following way: 
 </p>
 <pre>
+"Year","Make","Model","Description","Price"
 1996,"Ford","Ka","abs,ac",2999.99
 1998,"Chevy","Venture \"Extended Edition\"","",3999
 1998,"Chevy","Venture \"Executive Edition, Large\"","",4999
