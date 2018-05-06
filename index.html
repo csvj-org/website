@@ -36,7 +36,7 @@ p.license { margin-left: 10pt; font-size: 8pt; }
 <h1>CSVJ</h1>
 
 <p>CSVJ is a csv-like format for storing tables that follows certain JSON encoding rules. </p>
-<p>Unlike plain csv, CSVJ has a strict definition for separators, quoting, encoding and non-optional header line. It supposed to be imported and exported without configuration and it does not have dialects. </p>
+<p>Unlike plain csv, CSVJ has a strict definition for separators, quoting, encoding and non-optional header line. </p>
 
 <h2>Why?</h2>
 
@@ -45,12 +45,12 @@ There are many <a href="https://donatstudios.com/Falsehoods-Programmers-Believe-
 </p>
 
 <p>
-You can't be sure that CSV generated in one application could be imported to another without tweaking export or import parameters. CSVJ solves this. 
+You can't be sure that something called 'CSV' generated in one application could be imported to another without tweaking export or import parameters. CSVJ solves this. 
 </p>
 
 <h2>Format</h2>
 <p>
-CSVJ file consists of number of lines separated by newlines (Windows or Linux style).
+CSVJ file consists of number of lines:
 </p>
 
 <p>
@@ -65,22 +65,21 @@ Each CSVJ line is like a JSON array, except:
 <li>It does not have starting and ending square brackets</li>
 </ul>
 <p>
-CSVJ line itself can never contain \r or \n symbols.
+Obviously CSVJ line itself can never contain \r or \n symbols &mdash; or it becomes two lines.
 </p>
 
 <p>
 <img src="img/csvj-line.png">
 </p>
-
-<p>CSVJ values (array elements) otherwise are identical to JSON. </p>
-
 <p><img src="img/csvj-value.png"></p>
 
-<p>String and number formats are the same as JSON.</p>
+<p>String and number formats are the same as <a href="https://json.org">JSON</a>.</p>
 
 <p>First line of every CSVJ file <b>must</b> contain table header &mdash; human readable names corresponding to the fields in the file, always represented as strings.</p>
 
 <p>Table header cannot be ommited. An empty first line can be used if there is no information about table fields.</p>
+
+<p>Like JSON, CSVJ files should be encoded in UTF-8 and should not include byte order mark (see <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> section 8.1 about JSON)</p>
 
 
 <h2>Example</h2
@@ -148,20 +147,8 @@ The table above represented in CSVJ will look the following way:
 
 
 
-<qq>Which encoding should be used for CSVJ?</qq>
-<aa>UTF-8, like for JSON. <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> states:
-<blockquote>JSON text exchanged between systems that are not part of a closed
-   ecosystem MUST be encoded using UTF-8 [RFC3629].</blockquote>
-Obviously you can use any encoding inside a closed ecosystem. 
-</aa>
 
-
-<qq>Should BOM be omitted?</qq>
-<aa>Yes. Mentioned above <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> mentions that byte order mark MUST NOT be added to JSON. The&nbsp;same applies to CSVJ.</aa>
-
-
-
-<qq>How my application should parse <cc>null</cc>?</qq>
+<qq>How should my application parse <cc>null</cc>?</qq>
 <aa>
 Preferably <cc>null</cc> should be represented as null-value, or <a href="https://support.office.com/en-us/article/na-function-5469c2d1-a90c-4fb5-9bbc-64bd9bb6b47c">#N/A error value.</a>
 <br>
@@ -177,7 +164,7 @@ The names implies strong relation to CSV and some relation to JSON.
 <qq>Is CSVJ file a valid CSV file?</qq>
 <aa>
 Sometimes it is. If your string values does not have any escaped characters (newlines, double quotes, etc) — it might be parsed as CSV file in some applications. <br>
-For the sake of transparency, we recommend 
+For the sake of transparency, we recommend specifying that you are exporting CSVJ file, when you are exporting CSVJ file. 
 </aa>
 
 
@@ -186,15 +173,17 @@ For the sake of transparency, we recommend
 
 <h2>Libraries and Software</h2>
 
-<p>To be listed in this section. See <a href="https://github.com/csvj-org">github.com/csvj-org</a> for code by csvj-org.</p>
+<p>Will be listed in this section. See <a href="https://github.com/csvj-org">github.com/csvj-org</a> for code by CSVJ.org.</p>
 
 
 
 <h2>Metadata</h2>
 
-<p>Recommended file extension: csvj</p>
+<p>CSVJ files must have <code>.csvj</code> extension, so user could destinct them from broken CSV files.</p>
 
 <p>Currently there is no registered MIME extension, however we plan to apply for <code>text/csvj</code> at some point.</p>
+
+<p>Because CSVJ files are plain text, you are free to use <code>text/plain</code> MIME type as long as .csvj extension is preserved.</p>
 
 
 
