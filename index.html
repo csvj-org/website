@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<title>CSVJ: plain-text standard for comma separated tables</title>
+<meta charset="utf-8">
+
+<style type="text/css">
+body { 
+	margin: 40px auto 40px 40px; 
+	max-width: 650px;
+	line-height:1.6;
+	font-size:12pt;
+	color:#444;
+	padding:0 10px
+}
+h1,h2,h3 { line-height:1.2 }
+img { display: block; margin: 30px 0 0 0;}
+small { font-family: sans-serif; font-size: 10pt; }
+faq qq { font-weight: bold; }
+faq qq, faq aa { display: block; }
+faq aa {  margin-bottom: 20pt; }
+faq cc { font-family: monospace; }
+table.example {
+	border-collapse: collapse; 
+}
+table.example td, table.example th { 
+	border: 1px solid #aaa; 
+	margin: 0; 
+	padding: 4pt;
+}
+table.example th { background-color: #eee; }
+pre { font-size: 10pt; }
+p.license { margin-left: 10pt; font-size: 8pt; }
+</style>
+
+
+<h1>CSVJ</h1>
+
+<p>CSVJ is a csv-like format for storing tables that follows certain JSON encoding rules. </p>
+<p>Unlike plain csv, CSVJ has a strict definition for separators, quoting, encoding. It supposed to be imported and exported without configuration and it does not have dialects. </p>
+
+<h2>Why?</h2>
+
+<p>
+There are many <a href="https://donatstudios.com/Falsehoods-Programmers-Believe-About-CSVs">problems with CSV format</a>, mainly text-encoding, separators and delimiters.
+</p>
+
+<p>
+You can't be sure that CSV generated in one application could be imported to another without tweaking export or parsing parameters. CSVJ solves this. 
+</p>
+
+<h2>Format</h2>
+<p>
+CSVJ file consists of number of lines separated by newlines (Windows or Linux style).
+</p>
+
+<p>
+<img src="img/csvj-file.png">
+<small>newline is \r or \r\n</small>
+</p>
+
+<p>
+Each CSVJ line is like a JSON array, except:
+<ul>
+<li>Its elements cannot be array or object</li>
+<li>It does not have starting and ending square brackets</li>
+</ul>
+
+<p>
+<img src="img/csvj-line.png">
+</p>
+
+<p>CSVJ values (array elements) otherwise are identical to JSON. </p>
+
+<p><img src="img/csvj-value.png"></p>
+
+<p>String and number formats are the same as JSON.</p>
+
+<p>That's all.</p>
+
+<h2>Example</h2
+<p>
+Consider the following table: 
+</p>
+<table class="example">
+<tr>
+<th>Year</th>
+<th>Make</th>
+<th>Model</th>
+<th>Description</th>
+<th>Price</th>
+</tr>
+<tr>
+<td>1996</td>
+<td>Ford</td>
+<td>Ka</td>
+<td>abs, ac</td>
+<td>3000</td>
+</tr>
+<tr>
+<td>1998</td>
+<td>Chevy</td>
+<td>Venture "Extended Edition"</td>
+<td></td>
+<td>3999</td>
+</tr>
+<tr>
+<td>1998</td>
+<td>Chevy</td>
+<td>Venture "Executive Edition, Large"</td>
+<td></td>
+<td>4999</td>
+</tr>
+<tr>
+<td>1995</td>
+<td>Jeep</td>
+<td>Grand Cherokee</td>
+<td>SELL NOW!<br />
+air, moon roof, loaded</td>
+<td>$3599</td>
+</tr>
+</table>
+
+<p>
+The table above represented in CSVJ will look the following way: 
+</p>
+<pre>
+1996,"Ford","Ka","abs,ac",2999.99
+1998,"Chevy","Venture \"Extended Edition\"","",3999
+1998,"Chevy","Venture \"Executive Edition, Large\"","",4999
+1995,"Jeep","Grand Cherokee","SELL NOW!\nair, moon roof, loaded","$3599"
+</pre>
+<p>The representation does not change, regardless preferred decimal or value separators of the country the code is running in.</p>
+
+
+<h2>Frequently Asked Questions</h2>
+<faq>
+
+<qq>What's wrong with CSV <a href="https://tools.ietf.org/html/rfc4180">RFC 4180</a> ?</qq>
+
+<aa>Unfortunately by the time that informational memo about CSV files appeared there were many existing CSV implementations that work differently. Many of them are not compliant with RFC 4180 and do not indent to be.</aa>
+
+
+
+<qq>Which encoding should be used for CSVJ?</qq>
+<aa>UTF-8, like for JSON. <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> states:
+<blockquote>JSON text exchanged between systems that are not part of a closed
+   ecosystem MUST be encoded using UTF-8 [RFC3629].</blockquote>
+Obviously you can use any encoding inside a closed ecosystem. 
+</aa>
+
+
+<qq>Should BOM be omitted?</qq>
+<aa>Yes. Mentioned above <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> mentions that byte order mark MUST NOT be added to JSON. The&nbsp;same applies to CSVJ.</aa>
+
+
+
+<qq>How my application should parse <cc>null</cc>?</qq>
+<aa>
+Preferably <cc>null</cc> should be represented as null-value, or <a href="https://support.office.com/en-us/article/na-function-5469c2d1-a90c-4fb5-9bbc-64bd9bb6b47c">#N/A error value.</a>
+<br>
+If the application does not support absence of values, it should be represented as an empty string. 
+</aa>
+
+<qq>What does CSVJ stands for? Is it acronym?</qq>
+<aa>
+<b>CSVJ</b> is not an acronym. It just rather unique combination of letters which is relatively unused as a data format or library name (as of April 2018). 
+The names implies strong relation to CSV and some relation to JSON. 
+</aa>
+
+<qq>Is CSVJ file a valid CSV file?</qq>
+<aa>
+Sometimes it is. If your string values does not have any escaped characters (newlines, double quotes, etc) — it might be parsed as CSV file in some applications. <br>
+For the sake of transparency, we recommend 
+</aa>
+
+
+</faq>
+
+
+<h2>Libraries and Software</h2>
+
+<p>To be listed in this section. See <a href="https://github.com/csvj-org">github.com/csvj-org</a> for code by csvj-org.</p>
+
+
+
+<h2>Metadata</h2>
+
+<p>Recommended file extension: csvj</p>
+
+<p>Currently there is no registered MIME extension, however we plan to apply for <code>text/csvj</code> at some point.</p>
+
+
+
+<h2>License</h2>
+
+<p>All original content at csvj.org is distributed under MIT license:</p>
+<p class="license">
+Copyright (c) 2018 CSVJ.org 
+<br><br>
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+<br><br>
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+<br><br>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</p>
+
+<p>Some images from <a href="https://json.org">json.org</a> are used according to JSON license:</p>
+<p class="license">
+Copyright (c) 2002 JSON.org
+<br><br>
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+<br><br>
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+<br><br>
+The Software shall be used for Good, not Evil.
+<br><br>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+
