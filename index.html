@@ -12,6 +12,7 @@ body {
 	color:#444;
 	padding:0 10px
 }
+code,tt { font-size: 11pt !important;  }
 h1,h2,h3 { line-height:1.2 }
 img { display: block; margin: 30px 0 0 0;}
 small { font-family: sans-serif; font-size: 10pt; }
@@ -30,6 +31,8 @@ table.example td, table.example th {
 table.example th { background-color: #eee; }
 pre { font-size: 10pt; }
 p.license { margin-left: 10pt; font-size: 8pt; }
+ul { padding-left: 2px; list-style-position: inside; }
+ul ul { padding-left: 1em; }
 </style>
 
 
@@ -55,7 +58,7 @@ CSVJ file consists of number of lines:
 
 <p>
 <img src="img/csvj-file.png">
-<small>newline is \r or \r\n</small>
+<small>newline is \n or \r\n</small>
 </p>
 
 <p>
@@ -65,7 +68,7 @@ Each CSVJ line is like a JSON array, except:
 <li>It does not have starting and ending square brackets</li>
 </ul>
 <p>
-Obviously CSVJ line itself can never contain \r or \n symbols &mdash; or it becomes two lines.
+Obviously CSVJ line itself can never contain \r or \n symbols &mdash; or it becomes two lines. These symbols are escaped in strings. 
 </p>
 
 <p>
@@ -75,9 +78,9 @@ Obviously CSVJ line itself can never contain \r or \n symbols &mdash; or it beco
 
 <p>String and number formats are the same as <a href="https://json.org">JSON</a>.</p>
 
-<p>First line of every CSVJ file <b>must</b> contain table header &mdash; human readable names corresponding to the fields in the file, always represented as strings.</p>
+<p>First line of every CSVJ file <b>must</b> contain table header &mdash; human readable names corresponding to the columns in the file, always represented as strings.</p>
 
-<p>Table header cannot be ommited. An empty first line can be used if there is no information about table fields.</p>
+<p>Table header cannot be ommited. When there are absolutely no information about table columns available, an empty first line can be used.</p>
 
 <p>Like JSON, CSVJ files should be encoded in UTF-8 and should not include byte order mark (see <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> section 8.1 about JSON)</p>
 
@@ -130,7 +133,7 @@ The table above represented in CSVJ will look the following way:
 </p>
 <pre>
 "Year","Make","Model","Description","Price"
-1996,"Ford","Ka","abs,ac",2999.99
+1996,"Ford","Ka","abs,ac",3000
 1998,"Chevy","Venture \"Extended Edition\"","",3999
 1998,"Chevy","Venture \"Executive Edition, Large\"","",4999
 1995,"Jeep","Grand Cherokee","SELL NOW!\nair, moon roof, loaded","$3599"
@@ -173,7 +176,23 @@ For the sake of transparency, we recommend specifying that you are exporting CSV
 
 <h2>Libraries and Software</h2>
 
-<p>Will be listed in this section. See <a href="https://github.com/csvj-org">github.com/csvj-org</a> for code by CSVJ.org.</p>
+<p>See <a href="https://github.com/csvj-org">github.com/csvj-org</a> for all code by CSVJ.org. Following libraries are available:
+	<ul>
+		<li>Go<ul>
+			<li><a href="https://github.com/csvj-org/gocsvj">gocsvj</a></li></ul>
+		</li>
+	</ul>
+</p>
+
+
+<p><b>Looking for volunteers</b>: we want to create CSVJ libraries for different languages including, but not limited to:
+ C#, C++, golang, Java, JavaScript, Matlab, Objective-C, PHP, Python, R, rust, Swift.</p>
+
+<p>
+Other languages are welcome too. Email <tt>rcpt at andrian dot io</tt> with <tt>csvj</tt> mentioned in the subject. 
+</p>
+
+<p>After libraries are created, we would like the following types software to support CSVJ: RDBMS, spreadsheet editors, statistical software, financal and accounting software, machine learning packages and solutions, user management systems and others.</p>  
 
 
 
