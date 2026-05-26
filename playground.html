@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<title>CSVJ playground: validator and CSV converter</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Validate CSVJ documents and convert RFC 4180-style CSV to CSVJ in your browser. Runs the jscsvj reference implementation client-side.">
+<link rel="canonical" href="https://csvj.org/playground.html">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+
+<style>
+body {
+	margin: 40px auto 40px 40px;
+	max-width: 650px;
+	line-height: 1.6;
+	font-size: 12pt;
+	color: #444;
+	padding: 0 10px;
+}
+code, tt { font-size: 11pt !important; }
+h1, h2, h3 { line-height: 1.2; }
+small { font-family: sans-serif; font-size: 10pt; }
+table.example { border-collapse: collapse; }
+table.example td, table.example th {
+	border: 1px solid #aaa;
+	margin: 0;
+	padding: 4pt;
+}
+table.example th { background-color: #eee; }
+pre { font-size: 10pt; }
+
+.demo { background: #fafafa; border-left: 3px solid #ccc; padding: 8px 14px; margin: 12px 0 20pt 0; }
+.demo textarea { width: 100%; font-family: monospace; font-size: 10.5pt; box-sizing: border-box; }
+.demo .ok { color: #086; }
+.demo .err { color: #c33; }
+.demo pre { background: #fff; border: 1px solid #ddd; padding: 6px 8px; margin: 6px 0; }
+.demo table.example { margin-top: 6px; }
+.opts { font-size: 10pt; margin: 6px 0; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.opts label { white-space: nowrap; }
+.opts select { font-size: 10pt; }
+.nav { font-size: 10pt; }
+</style>
+
+
+<p class="nav">&larr; <a href="./">csvj.org</a></p>
+
+<h1>CSVJ playground</h1>
+
+<p>Two client-side widgets running the <a href="https://github.com/csvj-org/jscsvj">jscsvj</a> reference implementation directly in your browser. Nothing leaves the page. This page is a non-normative demo and is not part of the CSVJ specification.</p>
+
+<h2>Validate CSVJ</h2>
+
+<p>Paste a CSVJ document. It is parsed live; the resulting table or the parse error is shown below. CSVJ has a single canonical form, so there are no parser options &mdash; input is UTF-8 and the rules are those of the <a href="./">specification</a>.</p>
+
+<div class="demo">
+<textarea id="demo-validate-input" rows="6" spellcheck="false" autocomplete="off">
+"Year","Make","Model","Description","Price"
+1996,"Ford","Ka","abs, ac",3000
+1998,"Chevy","Venture \"Extended Edition\"","",3999
+</textarea>
+<div id="demo-validate-result"></div>
+</div>
+
+<h2>Convert CSV to CSVJ</h2>
+
+<p>Paste a CSV document. It is re-emitted as CSVJ. Unlike CSVJ, CSV has many dialects &mdash; pick the options that match your input. Numbers and the literals <code>true</code>, <code>false</code>, <code>null</code> are detected; everything else is emitted as a string. These coercion rules are one possible choice a CSV&nbsp;&rarr;&nbsp;CSVJ tool might make &mdash; they are not normative.</p>
+
+<div class="demo">
+<div class="opts">
+	<label>Separator
+		<select id="opt-sep">
+			<option value="comma" selected>, (comma)</option>
+			<option value="semicolon">; (semicolon)</option>
+			<option value="tab">\t (tab)</option>
+			<option value="pipe">| (pipe)</option>
+		</select>
+	</label>
+	<label>Quote
+		<select id="opt-quote">
+			<option value="&quot;" selected>" (double)</option>
+			<option value="'">' (single)</option>
+		</select>
+	</label>
+	<label>Escape
+		<select id="opt-escape">
+			<option value="doubled" selected>doubled quote (RFC 4180)</option>
+			<option value="backslash">backslash (\" \n \t \\)</option>
+		</select>
+	</label>
+	<label><input type="checkbox" id="opt-header" checked> first row is header</label>
+</div>
+<textarea id="demo-convert-input" rows="6" spellcheck="false" autocomplete="off">
+Year,Make,Model,Description,Price
+1996,Ford,Ka,"abs, ac",3000
+1998,Chevy,"Venture ""Extended Edition""",,3999
+</textarea>
+<div id="demo-convert-result"></div>
+</div>
+
+<script type="module">
+import { parse, stringify } from "./jscsvj.js";
+
+function parseCsv(input, opts) {
+	const sep = opts.separator;
+	const quote = opts.quote;
+	const backslash = opts.escape === "backslash";
+	const doubled = opts.escape === "doubled";
+	const rows = [];
+	let row = [];
+	let field = "";
+	let inQuotes = false;
+	let i = 0;
+	while (i < input.length) {
+		const c = input[i];
+		if (inQuotes) {
+			if (backslash && c === "\\" && i + 1 < input.length) {
+				const n = input[i + 1];
+				if (n === "n") { field += "\n"; i += 2; continue; }
+				if (n === "r") { field += "\r"; i += 2; continue; }
+				if (n === "t") { field += "\t"; i += 2; continue; }
+				if (n === "\\") { field += "\\"; i += 2; continue; }
+				if (n === quote) { field += quote; i += 2; continue; }
+				field += n; i += 2; continue;
+			}
+			if (c === quote) {
+				if (doubled && input[i + 1] === quote) { field += quote; i += 2; continue; }
+				inQuotes = false; i++; continue;
+			}
+			field += c; i++; continue;
+		}
+		if (c === quote) {
+			if (field.length > 0) throw new Error(`csv: unexpected quote at offset ${i}`);
+			inQuotes = true; i++; continue;
+		}
+		if (c === sep) { row.push(field); field = ""; i++; continue; }
+		if (c === "\r") { i++; continue; }
+		if (c === "\n") {
+			row.push(field); rows.push(row);
+			row = []; field = ""; i++; continue;
+		}
+		field += c; i++;
+	}
+	if (inQuotes) throw new Error("csv: unterminated quoted field");
+	if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+	while (rows.length > 0 && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === "") {
+		rows.pop();
+	}
+	return rows;
+}
+
+function coerce(s) {
+	if (s === "null") return null;
+	if (s === "true") return true;
+	if (s === "false") return false;
+	if (/^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/.test(s)) {
+		return Number(s);
+	}
+	return s;
+}
+
+function renderTable(table, container) {
+	const t = document.createElement("table");
+	t.className = "example";
+	const hr = document.createElement("tr");
+	for (const h of table.header) {
+		const th = document.createElement("th");
+		th.textContent = h;
+		hr.appendChild(th);
+	}
+	t.appendChild(hr);
+	for (const row of table.rows) {
+		const tr = document.createElement("tr");
+		for (const v of row) {
+			const td = document.createElement("td");
+			if (v === null) {
+				const em = document.createElement("em");
+				em.textContent = "null";
+				td.appendChild(em);
+			} else {
+				td.textContent = String(v);
+			}
+			tr.appendChild(td);
+		}
+		t.appendChild(tr);
+	}
+	container.appendChild(t);
+}
+
+function wireValidator() {
+	const input = document.getElementById("demo-validate-input");
+	const out = document.getElementById("demo-validate-result");
+	const run = () => {
+		out.innerHTML = "";
+		try {
+			const table = parse(input.value);
+			const ok = document.createElement("p");
+			ok.className = "ok";
+			ok.textContent = `Parsed: ${table.header.length} column(s), ${table.rows.length} data row(s).`;
+			out.appendChild(ok);
+			renderTable(table, out);
+		} catch (err) {
+			const fail = document.createElement("p");
+			fail.className = "err";
+			fail.textContent = err.message || String(err);
+			out.appendChild(fail);
+		}
+	};
+	input.addEventListener("input", run);
+	run();
+}
+
+function wireConverter() {
+	const input = document.getElementById("demo-convert-input");
+	const out = document.getElementById("demo-convert-result");
+	const sepSel = document.getElementById("opt-sep");
+	const quoteSel = document.getElementById("opt-quote");
+	const escSel = document.getElementById("opt-escape");
+	const headerChk = document.getElementById("opt-header");
+	const sepMap = { comma: ",", semicolon: ";", tab: "\t", pipe: "|" };
+	const run = () => {
+		out.innerHTML = "";
+		try {
+			const opts = {
+				separator: sepMap[sepSel.value],
+				quote: quoteSel.value,
+				escape: escSel.value,
+			};
+			const rawRows = parseCsv(input.value, opts);
+			if (rawRows.length === 0) {
+				const empty = document.createElement("p");
+				empty.textContent = "(empty)";
+				out.appendChild(empty);
+				return;
+			}
+			let header, dataStart;
+			if (headerChk.checked) {
+				header = rawRows[0].map(String);
+				dataStart = 1;
+			} else {
+				const cols = rawRows[0].length;
+				header = Array.from({ length: cols }, (_, i) => `col${i + 1}`);
+				dataStart = 0;
+			}
+			const dataRows = [];
+			for (let i = dataStart; i < rawRows.length; i++) {
+				const r = rawRows[i];
+				if (r.length !== header.length) {
+					throw new Error(`csv: row ${i + 1} has ${r.length} field(s), header has ${header.length}`);
+				}
+				dataRows.push(r.map(coerce));
+			}
+			const csvj = stringify({ header, rows: dataRows });
+			const pre = document.createElement("pre");
+			pre.textContent = csvj;
+			out.appendChild(pre);
+		} catch (err) {
+			const fail = document.createElement("p");
+			fail.className = "err";
+			fail.textContent = err.message || String(err);
+			out.appendChild(fail);
+		}
+	};
+	input.addEventListener("input", run);
+	sepSel.addEventListener("change", run);
+	quoteSel.addEventListener("change", run);
+	escSel.addEventListener("change", run);
+	headerChk.addEventListener("change", run);
+	run();
+}
+
+wireValidator();
+wireConverter();
+</script>
