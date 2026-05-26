@@ -22,6 +22,7 @@ jobs:
           html5validator \
             --root . \
             --match 'index.html' \
-            --ignore-re 'Element .(faq|qq|aa|cc). not allowed' \
-            --ignore-re 'The .(faq|qq|aa|cc). element is a completely-unknown element' \
-            --ignore-re 'An .img. element must have an .alt. attribute'
+            --ignore-re \
+              'Element .(faq|qq|aa|cc). not allowed' \
+              'The .(faq|qq|aa|cc). element is a completely-unknown element' \
+              'An .img. element must have an .alt. attribute'
