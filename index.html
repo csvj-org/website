@@ -52,8 +52,9 @@ You can't be sure that something called 'CSV' generated in one application could
 </p>
 
 <h2>Format</h2>
+
 <p>
-CSVJ file consists of number of lines:
+A CSVJ file is a sequence of lines, each terminated by <code>\n</code> or <code>\r\n</code>. The first line is the header; subsequent lines are data rows.
 </p>
 
 <p>
@@ -62,13 +63,7 @@ CSVJ file consists of number of lines:
 </p>
 
 <p>
-Each CSVJ line is like a JSON array, except:
-<ul>
-<li>Its elements cannot be array or object</li>
-<li>It does not have starting and ending square brackets</li>
-</ul>
-<p>
-Obviously CSVJ line itself can never contain \r or \n symbols &mdash; or it becomes two lines. These symbols are escaped in strings. 
+Each line is a comma-separated sequence of values without the surrounding square brackets of a JSON array. A line itself cannot contain a raw <code>\r</code> or <code>\n</code> &mdash; those characters appear in strings only as the escape sequences <code>\r</code> and <code>\n</code>.
 </p>
 
 <p>
@@ -76,16 +71,51 @@ Obviously CSVJ line itself can never contain \r or \n symbols &mdash; or it beco
 </p>
 <p><img src="img/csvj-value.png"></p>
 
-<p>String and number formats are the same as <a href="https://json.org">JSON</a>.</p>
+<h3>Values</h3>
 
-<p>First line of every CSVJ file <b>must</b> contain table header &mdash; human readable names corresponding to the columns in the file, always represented as strings.</p>
+<p>
+Every value is a JSON value as defined by <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a>, restricted to the four primitive types &mdash; <code>string</code>, <code>number</code>, <code>true</code>, <code>false</code>, <code>null</code>. JSON arrays and objects are <b>not</b> permitted as values.
+</p>
 
-<p>Table header cannot be ommited. When there are absolutely no information about table columns available, an empty first line can be used.</p>
+<p>
+All lexical rules are inherited from RFC 8259 unchanged:
+</p>
+<ul>
+<li>Number forms follow RFC 8259 section 6. No <code>NaN</code>, no <code>Infinity</code>, no leading zeros, no bare <code>.5</code>, no trailing <code>1.</code>.</li>
+<li>String escapes follow RFC 8259 section 7, including <code>\uXXXX</code> with UTF-16 surrogate-pair handling.</li>
+<li>The keywords <code>true</code>, <code>false</code>, and <code>null</code> are lowercase only.</li>
+<li>Insignificant whitespace is permitted between tokens, as in JSON.</li>
+</ul>
 
-<p>Like JSON, CSVJ files should be encoded in UTF-8 and should not include byte order mark (see <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> section 8.1 about JSON)</p>
+<p>
+Files <b>must</b> be encoded in UTF-8. A parser <b>must not</b> emit a byte order mark and <b>may</b> ignore one if present at the start of input (see <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> section 8.1).
+</p>
+
+<h3>Header</h3>
+
+<p>
+The first line of every CSVJ file is the table header &mdash; human-readable column names, always represented as strings. The header line cannot be omitted; when no column information is available, an <em>empty</em> first line (zero values) is used.
+</p>
+
+<h3>Structural rules</h3>
+
+<ol>
+<li><b>Empty files are invalid.</b> A 0-byte file is not a CSVJ file. The minimum valid CSVJ file is the single byte <code>\n</code>, which represents an empty header line and zero data rows.</li>
+<li><b>Trailing newline is required.</b> Every file <b>must</b> end with <code>\n</code> or <code>\r\n</code>. Every line, including the last, has the shape <em>content + terminator</em>.</li>
+<li><b>Ragged rows are rejected.</b> Every data line <b>must</b> contain exactly as many values as the header line. Empty trailing positions <b>must</b> be written explicitly as <code>""</code> or <code>null</code>.</li>
+<li><b>Duplicate column names are rejected.</b> Two header values <b>must not</b> compare equal as JSON strings. The empty header line (zero values) remains valid; a header containing duplicate empty strings such as <code>"",""</code> is rejected like any other duplicate.</li>
+<li><b>No absolute line-length limit.</b> A parser <b>may</b> impose finite line or value length limits but <b>must</b> document them in its user-facing documentation. A parser that silently truncates or rejects long input without a documented limit does not conform. Streaming parsers &mdash; memory proportional to the longest individual value rather than to the file or line size &mdash; are RECOMMENDED.</li>
+<li><b>No versioning.</b> CSVJ contains no version field and is not versioned. The specification may be revised for clarification only; any change that would invalidate previously-conforming files or break previously-conforming parsers is out of scope. A future incompatible format, if one were ever needed, would be published under a different name (e.g. "CSVJ2") rather than as a CSVJ version bump.</li>
+</ol>
+
+<h2>Conformance</h2>
+
+<p>
+An implementation claims CSVJ conformance by accepting every input the specification calls valid and rejecting every input the specification calls invalid. A language-agnostic conformance test suite is planned at <a href="https://github.com/csvj-org">github.com/csvj-org</a>; this section will link to the published vectors once the suite is released.
+</p>
 
 
-<h2>Example</h2
+<h2>Example</h2>
 <p>
 Consider the following table: 
 </p>
