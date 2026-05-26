@@ -37,6 +37,12 @@ pre { font-size: 10pt; }
 p.license { margin-left: 10pt; font-size: 8pt; }
 ul { padding-left: 2px; list-style-position: inside; }
 ul ul { padding-left: 1em; }
+.demo { background: #fafafa; border-left: 3px solid #ccc; padding: 8px 14px; margin: 12px 0 20pt 0; }
+.demo textarea { width: 100%; font-family: monospace; font-size: 10.5pt; box-sizing: border-box; }
+.demo .ok { color: #086; }
+.demo .err { color: #c33; }
+.demo pre { background: #fff; border: 1px solid #ddd; padding: 6px 8px; margin: 6px 0; }
+.demo table.example { margin-top: 6px; }
 </style>
 
 
@@ -205,6 +211,177 @@ The table above represented in CSVJ will look the following way:
 1995,"Jeep","Grand Cherokee","SELL NOW!\nair, moon roof, loaded","$3599"
 </pre>
 <p>The representation does not change, regardless preferred decimal or value separators of the country the code is running in.</p>
+
+
+<h2>Try it <small>(demo, not part of the specification)</small></h2>
+
+<p>Two client-side widgets running the <a href="https://github.com/csvj-org/jscsvj">jscsvj</a> reference implementation directly in your browser.</p>
+
+<h3>Validate CSVJ</h3>
+
+<p>Paste a CSVJ document. It is parsed live; the resulting table or the parse error is shown below.</p>
+
+<div class="demo">
+<textarea id="demo-validate-input" rows="6" spellcheck="false" autocomplete="off">
+"Year","Make","Model","Description","Price"
+1996,"Ford","Ka","abs, ac",3000
+1998,"Chevy","Venture \"Extended Edition\"","",3999
+</textarea>
+<div id="demo-validate-result"></div>
+</div>
+
+<h3>Convert CSV to CSVJ</h3>
+
+<p>Paste an RFC&nbsp;4180-style CSV document. It is re-emitted as CSVJ. Numbers and the literals <code>true</code>, <code>false</code>, <code>null</code> are detected; everything else is emitted as a string. These coercion rules are one possible choice a CSV&nbsp;&rarr;&nbsp;CSVJ tool might make &mdash; they are not normative.</p>
+
+<div class="demo">
+<textarea id="demo-convert-input" rows="6" spellcheck="false" autocomplete="off">
+Year,Make,Model,Description,Price
+1996,Ford,Ka,"abs, ac",3000
+1998,Chevy,"Venture ""Extended Edition""",,3999
+</textarea>
+<div id="demo-convert-result"></div>
+</div>
+
+<script type="module">
+import { parse, stringify } from "./jscsvj.js";
+
+function parseCsv(input) {
+	const rows = [];
+	let row = [];
+	let field = "";
+	let inQuotes = false;
+	let i = 0;
+	while (i < input.length) {
+		const c = input[i];
+		if (inQuotes) {
+			if (c === '"') {
+				if (input[i + 1] === '"') { field += '"'; i += 2; continue; }
+				inQuotes = false; i++; continue;
+			}
+			field += c; i++; continue;
+		}
+		if (c === '"') {
+			if (field.length > 0) throw new Error(`csv: unexpected quote at offset ${i}`);
+			inQuotes = true; i++; continue;
+		}
+		if (c === ',') { row.push(field); field = ""; i++; continue; }
+		if (c === '\r') { i++; continue; }
+		if (c === '\n') {
+			row.push(field); rows.push(row);
+			row = []; field = ""; i++; continue;
+		}
+		field += c; i++;
+	}
+	if (inQuotes) throw new Error("csv: unterminated quoted field");
+	if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+	while (rows.length > 0 && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === "") {
+		rows.pop();
+	}
+	return rows;
+}
+
+function coerce(s) {
+	if (s === "null") return null;
+	if (s === "true") return true;
+	if (s === "false") return false;
+	if (/^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/.test(s)) {
+		return Number(s);
+	}
+	return s;
+}
+
+function renderTable(table, container) {
+	const t = document.createElement("table");
+	t.className = "example";
+	const hr = document.createElement("tr");
+	for (const h of table.header) {
+		const th = document.createElement("th");
+		th.textContent = h;
+		hr.appendChild(th);
+	}
+	t.appendChild(hr);
+	for (const row of table.rows) {
+		const tr = document.createElement("tr");
+		for (const v of row) {
+			const td = document.createElement("td");
+			if (v === null) {
+				const em = document.createElement("em");
+				em.textContent = "null";
+				td.appendChild(em);
+			} else {
+				td.textContent = String(v);
+			}
+			tr.appendChild(td);
+		}
+		t.appendChild(tr);
+	}
+	container.appendChild(t);
+}
+
+function wireValidator() {
+	const input = document.getElementById("demo-validate-input");
+	const out = document.getElementById("demo-validate-result");
+	const run = () => {
+		out.innerHTML = "";
+		try {
+			const table = parse(input.value);
+			const ok = document.createElement("p");
+			ok.className = "ok";
+			ok.textContent = `Parsed: ${table.header.length} column(s), ${table.rows.length} data row(s).`;
+			out.appendChild(ok);
+			renderTable(table, out);
+		} catch (err) {
+			const fail = document.createElement("p");
+			fail.className = "err";
+			fail.textContent = err.message || String(err);
+			out.appendChild(fail);
+		}
+	};
+	input.addEventListener("input", run);
+	run();
+}
+
+function wireConverter() {
+	const input = document.getElementById("demo-convert-input");
+	const out = document.getElementById("demo-convert-result");
+	const run = () => {
+		out.innerHTML = "";
+		try {
+			const rawRows = parseCsv(input.value);
+			if (rawRows.length === 0) {
+				const empty = document.createElement("p");
+				empty.textContent = "(empty)";
+				out.appendChild(empty);
+				return;
+			}
+			const header = rawRows[0].map(String);
+			const dataRows = [];
+			for (let i = 1; i < rawRows.length; i++) {
+				const r = rawRows[i];
+				if (r.length !== header.length) {
+					throw new Error(`csv: row ${i} has ${r.length} field(s), header has ${header.length}`);
+				}
+				dataRows.push(r.map(coerce));
+			}
+			const csvj = stringify({ header, rows: dataRows });
+			const pre = document.createElement("pre");
+			pre.textContent = csvj;
+			out.appendChild(pre);
+		} catch (err) {
+			const fail = document.createElement("p");
+			fail.className = "err";
+			fail.textContent = err.message || String(err);
+			out.appendChild(fail);
+		}
+	};
+	input.addEventListener("input", run);
+	run();
+}
+
+wireValidator();
+wireConverter();
+</script>
 
 
 <h2>Frequently Asked Questions</h2>
