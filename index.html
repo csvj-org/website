@@ -108,6 +108,38 @@ The first line of every CSVJ file is the table header &mdash; human-readable col
 <li><b>No versioning.</b> CSVJ contains no version field and is not versioned. The specification may be revised for clarification only; any change that would invalidate previously-conforming files or break previously-conforming parsers is out of scope. A future incompatible format, if one were ever needed, would be published under a different name (e.g. "CSVJ2") rather than as a CSVJ version bump.</li>
 </ol>
 
+<h3>Grammar</h3>
+
+<p>
+The following ABNF grammar, in the notation of <a href="https://tools.ietf.org/html/rfc5234">RFC 5234</a>, captures the shape of a CSVJ file. The productions <code>string</code>, <code>number</code>, <code>false</code>, <code>true</code>, and <code>null</code> are imported unchanged from <a href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> &mdash; the same notation JSON itself uses.
+</p>
+
+<pre>
+csvj-file       = header-line *data-line
+
+header-line     = line
+data-line       = line
+
+line            = ws [ value *( comma value ) ] ws line-terminator
+
+comma           = ws %x2C ws
+line-terminator = LF / CRLF
+LF              = %x0A
+CRLF            = %x0D.0A
+
+value           = false / null / true / number / string
+
+ws              = *( %x20 / %x09 )
+</pre>
+
+<p>
+Note that <code>ws</code> is restricted to space and horizontal tab; the carriage return and line feed that RFC 8259 also classes as insignificant whitespace are reserved as line terminators in CSVJ.
+</p>
+
+<p>
+The grammar above does not express the cross-line semantic constraints from the structural rules &mdash; that the file must contain at least one line (rule&nbsp;1), that every data line has the same value count as the header line (rule&nbsp;3), and that header values are pairwise distinct as JSON strings (rule&nbsp;4). A conforming parser enforces those constraints in addition to the grammar.
+</p>
+
 <h2>Conformance</h2>
 
 <p>
